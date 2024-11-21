@@ -13,7 +13,7 @@ class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
-        $request->validated([
+        $request->validate([
             "email" => "required|email|max:255",
             "password" => "required|string|min:8|max:255"
         ]);
@@ -28,7 +28,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = $user->createToken($user->name, 'Auth-Token')->plainTextToken;
+        $token = $user->createToken($user->name, ['Auth-Token'])->plainTextToken;
 
         return response()->json([
             'message' => 'Успешная авторизация',
@@ -52,7 +52,7 @@ class AuthController extends Controller
         ]);
 
         if ($user) {
-            $token = $user->createToken($user->name, 'Auth-Token')->plainTextToken;
+            $token = $user->createToken($user->name, ['Auth-Token'])->plainTextToken;
 
             return response()->json([
                 'message' => 'Успешная регистрация',
@@ -63,6 +63,36 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'При регистрации что-то пошло не так'
             ], 500);
+        }
+    }
+
+    public function profile(Request $request): JsonResponse
+    {
+        if ($request->user()) {
+            return response()->json([
+                'message' => 'Профиль найден',
+                'data' => $request->user()
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Вы не аутентифицированы'
+            ], 401);
+        }
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $user = User::where('id', $request->user()->id)->first();
+        if ($user) {
+            $user->tokens()->delete();
+            return response()->json([
+                'message' => 'Вы успешно вышли из аккаунта'
+
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Пользователь не найден'
+            ], 404);
         }
     }
 }
